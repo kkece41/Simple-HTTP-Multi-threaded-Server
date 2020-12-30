@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "log.h"
 
 typedef struct sockaddr sockaddr_t;

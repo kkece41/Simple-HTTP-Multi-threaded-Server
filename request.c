@@ -159,8 +159,11 @@ void request_serve_static(int fd, char *filename, int filesize)
 }
 
 // handle a request
-void request_handle(int fd)
+void* request_handle(void* pt)
 {
+
+    int fd;
+    fd = *((int*)pt);
 
     log_info("Inside request handle");
 
@@ -176,7 +179,7 @@ void request_handle(int fd)
     if (strcasecmp(method, "GET"))
     {
         request_error(fd, method, "501", "Not Implemented", "server does not implement this method");
-        return;
+        return NULL;
     }
     request_read_headers(fd);
 
@@ -185,7 +188,7 @@ void request_handle(int fd)
     if (stat(filename, &sbuf) < 0)
     {
         request_error(fd, filename, "404", "Not found", "server could not find this file");
-        return;
+        return NULL;
     }
 
     if (is_static)
@@ -193,7 +196,7 @@ void request_handle(int fd)
         if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode))
         {
             request_error(fd, filename, "403", "Forbidden", "server could not read this file");
-            return;
+            return NULL;
         }
         request_serve_static(fd, filename, sbuf.st_size);
         log_info("After serving static"); 
@@ -203,9 +206,11 @@ void request_handle(int fd)
         if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode))
         {
             request_error(fd, filename, "403", "Forbidden", "server could not run this CGI program");
-            return;
+            return NULL;
         }
         request_serve_dynamic(fd, filename, cgiargs);
         log_info("After serving dynamic"); 
     }
+
+    return NULL;
 }

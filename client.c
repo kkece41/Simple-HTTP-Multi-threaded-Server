@@ -8,15 +8,16 @@
 // Prints out the HTTP response.
 //
 
-
 #include "io_helper.h"
+#include <time.h> 
 
 #define MAXBUF (8192)
 
 //`
 // Send an HTTP request for the specified file 
 //
-void client_send(int fd, char *filename) {
+void client_send(int fd, char *filename)
+{
     char buf[MAXBUF];
     char hostname[MAXBUF];
     
@@ -31,13 +32,15 @@ void client_send(int fd, char *filename) {
 //
 // Read the HTTP response and print it out
 //
-void client_print(int fd) {
+void client_print(int fd)
+{
     char buf[MAXBUF];  
     int n;
     
     // Read and display the HTTP Header 
     n = readline_or_die(fd, buf, MAXBUF);
-    while (strcmp(buf, "\r\n") && (n > 0)) {
+    while (strcmp(buf, "\r\n") && (n > 0))
+    {
 	printf("Header: %s", buf);
 	n = readline_or_die(fd, buf, MAXBUF);
 	
@@ -50,13 +53,20 @@ void client_print(int fd) {
     
     // Read and display the HTTP Body 
     n = readline_or_die(fd, buf, MAXBUF);
-    while (n > 0) {
+    while (n > 0)
+    {
 	printf("%s", buf);
 	n = readline_or_die(fd, buf, MAXBUF);
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
+
+    clock_t start, end;
+
+    start = clock(); // Starting the clock
+
     char *host, *filename;
     int port;
     int clientfd;
@@ -78,5 +88,10 @@ int main(int argc, char *argv[]) {
     
     close_or_die(clientfd);
     
+    end = clock();
+    double time_taken = (double)(end - start)/(CLOCKS_PER_SEC); 
+
+    printf("Time elapsed is %lf \n", time_taken);   
+
     exit(0);
 }

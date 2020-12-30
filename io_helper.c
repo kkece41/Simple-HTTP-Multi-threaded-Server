@@ -35,11 +35,20 @@ int open_client_fd(char *hostname, int port)
     struct sockaddr_in server_addr;
 
     if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        fprintf(stderr,"%s: \n", strerror(errno));
         return -1;
+    }
+        
 
     // Fill in the server's IP address and port
     if ((hp = gethostbyname(hostname)) == NULL)
-        return -2; // check h_errno for cause of error
+    {
+       fprintf(stderr, "DNS error %d\n", h_errno);
+       printf("DNS error\n");
+       return -2; // check h_errno for cause of error
+    }
+
     bzero((char *)&server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     bcopy((char *)hp->h_addr,
@@ -48,7 +57,12 @@ int open_client_fd(char *hostname, int port)
 
     // Establish a connection with the server
     if (connect(client_fd, (sockaddr_t *)&server_addr, sizeof(server_addr)) < 0)
+    {
+        fprintf(stderr, "%s\n", strerror(errno));
+        printf("Connection failed\n");
         return -1;
+    }
+        
     return client_fd;
 }
 
