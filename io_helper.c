@@ -8,6 +8,12 @@ ssize_t readline(int fd, void *buf, size_t maxlen)
     for (n = 0; n < maxlen - 1; n++) // leave room at end for '\0'
     {
         int rc;
+        
+        /*rc = read(fd, &c , 1);
+       if(rc<0)
+        {
+            fprintf(stderr,"readline %s: \n", strerror(errno));
+        }*/
         if ((rc = read_or_die(fd, &c, 1)) == 1)
         {
             *bufp++ = c;

@@ -1,7 +1,27 @@
 #include <stdio.h>
 #include "request.h"
 #include "io_helper.h"
+#include "MyQueue.h"
 
+#define THREAD_POOL_SIZE 25
+
+pthread_t thread_pool[THREAD_POOL_SIZE];
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void* get_conn_fd(void *arg)
+{
+    while(1)
+    {
+        pthread_mutex_lock(&mutex);
+        int *conn_fd = Dequeue();
+        pthread_mutex_unlock(&mutex);
+        if(conn_fd != NULL)
+        {
+            request_handle(conn_fd);
+        }
+    }
+}
 
 char default_root[] = ".";  // Single dot (.)-->present directory. //double dot (..)-->parent directory
 
@@ -10,11 +30,17 @@ char default_root[] = ".";  // Single dot (.)-->present directory. //double dot 
 // schedalg---> Scheduling Algorithm
 int main(int argc, char *argv[])
 {
+    log_info("Starting main()");
     int c;
     char *root_dir = default_root;
     int port = 10000;
+    
+    for(int i=0; i<THREAD_POOL_SIZE; i++)
+    {
+        pthread_create(&thread_pool[i], NULL, get_conn_fd, NULL);
+    }
 
-    log_info("Starting main(), going into loop");
+    log_info("Created a thread pool");
 
     while ((c = getopt(argc, argv, "d:p:")) != -1)
         switch (c)
@@ -47,10 +73,18 @@ int main(int argc, char *argv[])
         struct sockaddr_in client_addr;
         int client_len = sizeof(client_addr);
         int conn_fd = accept_or_die(listen_fd, (sockaddr_t *)&client_addr, (socklen_t *)&client_len);
-        //request_handle((void*)&conn_fd);
+        //request_handle((void*)&conn_fd);  // Enable for sequential execution of clients, without threads
+        
+        int* pclient = malloc(sizeof(int));
+        *pclient = conn_fd;
 
-        pthread_t ptr;
-        pthread_create(&ptr, NULL, request_handle,(void*)&conn_fd); // Creating a thread for every new connection
+        pthread_mutex_lock(&mutex);  // Synchronising the access of queeue.
+        Enqueue(pclient);
+        pthread_mutex_unlock(&mutex);
+
+      
+        //pthread_t ptr;
+        //pthread_create(&ptr, NULL, request_handle,(void*)&conn_fd); // Creating a thread for every new connection
 
         //close_or_die(conn_fd);
     }

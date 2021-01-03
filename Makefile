@@ -9,8 +9,8 @@ OBJS = server.o request.o io_helper.o
 
 kkserver: server client
 
-server: server.o request.o io_helper.o
-	$(CC) $(CFLAGS) -o server server.o request.o io_helper.o -lpthread
+server: server.o request.o io_helper.o MyQueue.o
+	$(CC) $(CFLAGS) -o server server.o request.o io_helper.o MyQueue.o -lpthread
 
 client: client.o io_helper.o
 	$(CC) $(CFLAGS) -o client client.o io_helper.o
