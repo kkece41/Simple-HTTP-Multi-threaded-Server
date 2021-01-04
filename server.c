@@ -4,17 +4,31 @@
 #include "MyQueue.h"
 
 #define THREAD_POOL_SIZE 25
+#define MAX_BUFFER_SIZE 25
 
 pthread_t thread_pool[THREAD_POOL_SIZE];
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+pthread_cond_t fill = PTHREAD_COND_INITIALIZER;
+pthread_cond_t empty = PTHREAD_COND_INITIALIZER;
+int count = 0;
 
 void* get_conn_fd(void *arg)
 {
     while(1)
     {
         pthread_mutex_lock(&mutex);
+
+        while (count == 0)
+        {
+            pthread_cond_wait(&fill, &mutex);
+        }
+
         int *conn_fd = Dequeue();
+        count = count-1;
+
+        pthread_cond_signal(&empty);
         pthread_mutex_unlock(&mutex);
         if(conn_fd != NULL)
         {
@@ -26,7 +40,7 @@ void* get_conn_fd(void *arg)
 char default_root[] = ".";  // Single dot (.)-->present directory. //double dot (..)-->parent directory
 
 
-// ../wserver [-d basedir] [-p port] [-t threads] [-b buffers] [-s schedalg] 
+// ../wserver [-d basedir] [-p port] 
 // schedalg---> Scheduling Algorithm
 int main(int argc, char *argv[])
 {
@@ -79,7 +93,15 @@ int main(int argc, char *argv[])
         *pclient = conn_fd;
 
         pthread_mutex_lock(&mutex);  // Synchronising the access of queeue.
+        while (count == MAX_BUFFER_SIZE)
+        {
+            pthread_cond_wait(&empty, &mutex);
+        }
+
         Enqueue(pclient);
+        count = (count+1);
+
+        pthread_cond_signal(&fill);
         pthread_mutex_unlock(&mutex);
 
       
